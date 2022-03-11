@@ -35,6 +35,59 @@ COMMANDS IN THE PRESENCE OF SPARSE-CHECKOUTS, WILL LIKELY CHANGE IN
 THE FUTURE.
 
 
+OPTIONS
+-------
+'--[no-]cone'::
+	Use with ['set'|'reapply'].
+	Specify using cone mode or not. The default is to use cone mode.
++
+By default, the input list is considered a list of directories, matching
+the output of `git ls-tree -d --name-only`.  This includes interpreting
+pathnames that begin with a double quote (") as C-style quoted strings.
+Note that all files under the specified directories (at any depth) will
+be included in the sparse checkout, as well as files that are siblings
+of either the given directory or any of its ancestors (see 'CONE PATTERN
+SET' below for more details).  In the past, this was not the default,
+and `--cone` needed to be specified or `core.sparseCheckoutCone` needed
+to be enabled.
++
+When `--no-cone` is passed, the input list is considered a list of
+patterns.  This mode is harder to use, and unless you can keep the
+number of patterns small, its design also scales poorly.  It used to be
+the default mode, but we do not recommend using it.  It does not work
+with the `--sparse-index` option, and will likely be incompatible with
+other new features as they are added.  See the "Non-cone Problems"
+section below and the "Sparse Checkout" section of
+linkgit:git-read-tree[1] for more details.
+
+'--[no-]sparse-index'::
+	Use with ['set'|'reapply'].
+	Specify using a sparse index or not. The default is to not use a
+	sparse index.
++
+Use the `--[no-]sparse-index` option to use a sparse index (the
+default is to not use it).  A sparse index reduces the size of the
+index to be more closely aligned with your sparse-checkout
+definition. This can have significant performance advantages for
+commands such as `git status` or `git add`.  This feature is still
+experimental. Some commands might be slower with a sparse index until
+they are properly integrated with the feature.
++
+**WARNING:** Using a sparse index requires modifying the index in a way
+that is not completely understood by external tools. If you have trouble
+with this compatibility, then run `git sparse-checkout init --no-sparse-index`
+to rewrite your index to not be sparse. Older versions of Git will not
+understand the sparse directory entries index extension and may fail to
+interact with your repository until it is disabled.
+
+'--stdin'::
+	Use with ['set'|'add'].
++
+When the `--stdin` option is provided, the directories or patterns are
+read from standard in as a newline-delimited list instead of from the
+arguments.
+
+
 COMMANDS
 --------
 'list'::
@@ -55,44 +108,6 @@ config if not already present. The sparsity defined by the arguments to
 the 'set' subcommand are stored in the worktree-specific sparse-checkout
 file. See linkgit:git-worktree[1] and the documentation of
 `extensions.worktreeConfig` in linkgit:git-config[1] for more details.
-+
-When the `--stdin` option is provided, the directories or patterns are
-read from standard in as a newline-delimited list instead of from the
-arguments.
-+
-By default, the input list is considered a list of directories, matching
-the output of `git ls-tree -d --name-only`.  This includes interpreting
-pathnames that begin with a double quote (") as C-style quoted strings.
-Note that all files under the specified directories (at any depth) will
-be included in the sparse checkout, as well as files that are siblings
-of either the given directory or any of its ancestors (see 'CONE PATTERN
-SET' below for more details).  In the past, this was not the default,
-and `--cone` needed to be specified or `core.sparseCheckoutCone` needed
-to be enabled.
-+
-When `--no-cone` is passed, the input list is considered a list of
-patterns.  This mode is harder to use, and unless you can keep the
-number of patterns small, its design also scales poorly.  It used to be
-the default mode, but we do not recommend using it.  It does not work
-with the `--sparse-index` option, and will likely be incompatible with
-other new features as they are added.  See the "Non-cone Problems"
-section below and the "Sparse Checkout" section of
-linkgit:git-read-tree[1] for more details.
-+
-Use the `--[no-]sparse-index` option to use a sparse index (the
-default is to not use it).  A sparse index reduces the size of the
-index to be more closely aligned with your sparse-checkout
-definition. This can have significant performance advantages for
-commands such as `git status` or `git add`.  This feature is still
-experimental. Some commands might be slower with a sparse index until
-they are properly integrated with the feature.
-+
-**WARNING:** Using a sparse index requires modifying the index in a way
-that is not completely understood by external tools. If you have trouble
-with this compatibility, then run `git sparse-checkout init --no-sparse-index`
-to rewrite your index to not be sparse. Older versions of Git will not
-understand the sparse directory entries index extension and may fail to
-interact with your repository until it is disabled.
 
 'add'::
 	Update the sparse-checkout file to include additional directories
