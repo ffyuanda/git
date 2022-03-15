@@ -1853,4 +1853,38 @@ test_expect_success 'mv directory from out-of-cone to in-cone' '
 	grep -e "H deep/0/1" actual
 '
 
+test_expect_success 'mv' '
+	init_repos &&
+
+	# test first form <source> <destination>
+	test_all_match git mv deep/a deep/a_mod &&
+	test_all_match git mv deep/deeper1 deep/deeper1_mod &&
+	test_all_match git mv deep/deeper2/deeper1/deepest2/a \
+	deep/deeper2/deeper1/deepest2/a_mod &&
+
+	run_on_all git reset --hard &&
+
+	test_all_match git mv -f deep/a deep/before/a &&
+	test_all_match git mv -f deep/before/a deep/a &&
+
+	run_on_all git reset --hard &&
+
+	test_all_match git mv -k deep/a deep/before/a &&
+	test_all_match git mv -k deep/before/a deep/a &&
+
+	run_on_all git reset --hard &&
+
+	test_all_match git mv -v deep/a deep/a_mod &&
+	test_all_match git mv -v deep/deeper1 deep/deeper1_mod &&
+	test_all_match git mv -v deep/deeper2/deeper1/deepest2/a \
+	deep/deeper2/deeper1/deepest2/a_mod &&
+
+	# test second form <source> ... <destination directory>
+	run_on_all git reset --hard &&
+	run_on_all mkdir deep/folder &&
+	test_all_match git mv deep/a deep/folder &&
+	test_all_match git mv -v deep/deeper1 deep/folder &&
+	test_all_match git mv -f deep/deeper2/deeper1/deepest2/a deep/folder
+'
+
 test_done
