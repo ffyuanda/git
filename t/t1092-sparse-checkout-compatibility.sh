@@ -1654,4 +1654,27 @@ test_expect_success 'checkout behaves oddly with df-conflict-2' '
 	test_cmp full-checkout-err sparse-index-err
 '
 
+test_expect_success 'mv' '
+	init_repos &&
+
+	# <source> as file
+	test_all_match git mv deep/a deep/a_mod &&
+	test_all_match git mv deep/a_mod a_mod &&
+	test_all_match git mv a_mod deep/a_mod &&
+	test_all_match git mv a a_mod &&
+	test_all_match test_must_fail git mv a_mod deep/a_mod &&
+	test_all_match git mv -f a_mod deep/a_mod &&
+
+	# <source> as directory
+	test_all_match git mv deep/before deep/before_mod &&
+	test_sparse_match test_must_fail git mv deep/before_mod . &&
+	test_all_match git mv --sparse deep/before_mod . &&
+	test_sparse_match test_must_fail git mv before_mod before &&
+	test_all_match git mv --sparse before_mod before &&
+	test_sparse_match test_must_fail git mv before deep &&
+	test_all_match git mv --sparse before deep &&
+
+	test_all_match git status --porcelain=v2
+'
+
 test_done
