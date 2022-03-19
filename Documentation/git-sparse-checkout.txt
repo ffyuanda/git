@@ -66,11 +66,9 @@ file. See linkgit:git-worktree[1] and the documentation of
 
 'add'::
 	Update the sparse-checkout file to include additional directories
-	(in cone mode) or patterns (in non-cone mode).  By default, these
-	directories or patterns are read from the command-line arguments.
-  These directories or patterns are interpreted the same way as stated
-  above in `set` command, and they can be read from stdin using the
-  `--stdin` option.
+	(in cone mode) or patterns (in non-cone mode). By default, these
+	directories or patterns are read from the command-line arguments,
+	but they can be read from stdin using the `--stdin` option.
 
 'reapply'::
 	Reapply the sparsity pattern rules to paths in the working tree.
@@ -112,10 +110,6 @@ OPTIONS
 '--[no-]cone'::
 	Use with the `set` and `reapply` commands.
 	Specify using cone mode or not. The default is to use cone mode.
-+
-For the `set` command, the option to use cone mode or not changes
-the interpretation of the remaining arguments to either be a list
-of directories or a list of patterns.
 
 '--[no-]sparse-index'::
 	Use with the `set` and `reapply` commands.
