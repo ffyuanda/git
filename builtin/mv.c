@@ -199,6 +199,7 @@ int cmd_mv(int argc, const char **argv, const char *prefix)
 			bad = _("cannot move directory over file");
 		else if (src_is_dir) {
 			int first = cache_name_pos(src, length), last;
+			const struct cache_entry *the_dir;
 
 			if (first >= 0)
 				prepare_move_submodule(src, first,
@@ -208,6 +209,15 @@ int cmd_mv(int argc, const char **argv, const char *prefix)
 				bad = _("source directory is empty");
 			else { /* last - first >= 1 */
 				int j, dst_len, n;
+
+				/*
+				 * check if the src dir is sparse
+				 */
+				the_dir = active_cache[first];
+				if (ce_skip_worktree(the_dir)) {
+					string_list_append(&only_match_skip_worktree, src);
+					goto remove_entry;
+				}
 
 				modes[i] = WORKING_DIRECTORY;
 				n = argc + last - first;
