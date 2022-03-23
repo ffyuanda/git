@@ -187,6 +187,24 @@ int cmd_mv(int argc, const char **argv, const char *prefix)
 			printf(_("Checking rename of '%s' to '%s'\n"), src, dst);
 
 		length = strlen(src);
+
+		/*
+		 * We check if the paths are in the sparse-checkout
+		 * definition as a very first check, since that
+		 * allows us to point the user to the --sparse
+		 * option as a way to have a successful run.
+		 */
+		if (!ignore_sparse &&
+			!path_in_sparse_checkout(src, &the_index)) {
+			string_list_append(&only_match_skip_worktree, src);
+			skip_sparse = 1;
+		}
+		if (!ignore_sparse &&
+			!path_in_sparse_checkout(dst, &the_index)) {
+			string_list_append(&only_match_skip_worktree, dst);
+			skip_sparse = 1;
+		}
+
 		if (lstat(src, &st) < 0) {
 			/* only error if existence is expected. */
 			if (modes[i] != SPARSE)
@@ -264,23 +282,6 @@ int cmd_mv(int argc, const char **argv, const char *prefix)
 		else if (is_dir_sep(dst[strlen(dst) - 1]))
 			bad = _("destination directory does not exist");
 		else {
-			/*
-			 * We check if the paths are in the sparse-checkout
-			 * definition as a very final check, since that
-			 * allows us to point the user to the --sparse
-			 * option as a way to have a successful run.
-			 */
-			if (!ignore_sparse &&
-			    !path_in_sparse_checkout(src, &the_index)) {
-				string_list_append(&only_match_skip_worktree, src);
-				skip_sparse = 1;
-			}
-			if (!ignore_sparse &&
-			    !path_in_sparse_checkout(dst, &the_index)) {
-				string_list_append(&only_match_skip_worktree, dst);
-				skip_sparse = 1;
-			}
-
 			if (skip_sparse)
 				goto remove_entry;
 
