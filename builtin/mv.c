@@ -199,6 +199,13 @@ int cmd_mv(int argc, const char **argv, const char *prefix)
 			bad = _("cannot move directory over file");
 		else if (src_is_dir) {
 			int first = cache_name_pos(src, length), last;
+			const char *src_w_slash = add_slash(src);
+
+			if (!ignore_sparse &&
+				!path_in_sparse_checkout(src_w_slash, &the_index)) {
+					string_list_append(&only_match_skip_worktree, src_w_slash);
+					goto remove_entry;
+			}
 
 			if (first >= 0)
 				prepare_move_submodule(src, first,
