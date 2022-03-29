@@ -185,8 +185,32 @@ int cmd_mv(int argc, const char **argv, const char *prefix)
 
 		length = strlen(src);
 		if (lstat(src, &st) < 0) {
+			/*
+			 * TODO: for now, when you try to overwrite a <destination>
+			 * with your <source> as a sparse file, if you supply a "--sparse"
+			 * flag, then the action will be done without providing "--force"
+			 * and no warning.
+			 *
+			 * This is mainly because the sparse <source>
+			 * is not on-disk, and this if-else chain will be cut off early in
+			 * this check, thus the "--force" check is ignored. Need fix.
+			 */
+
+			int pos = cache_name_pos(src, length);
+			if (pos >= 0) {
+				const struct cache_entry *ce = active_cache[pos];
+
+				if (ce_skip_worktree(ce)) {
+					if (!ignore_sparse)
+						string_list_append(&only_match_skip_worktree, src);
+					else
+						modes[i] = SPARSE;
+				}
+				else
+					bad = _("bad source");
+			}
 			/* only error if existence is expected. */
-			if (modes[i] != SPARSE)
+			else if (modes[i] != SPARSE)
 				bad = _("bad source");
 		} else if (!strncmp(src, dst, length) &&
 				(dst[length] == 0 || dst[length] == '/')) {
