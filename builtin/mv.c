@@ -138,6 +138,7 @@ int cmd_mv(int argc, const char **argv, const char *prefix)
 {
 	int i, flags, gitmodules_modified = 0;
 	int verbose = 0, show_only = 0, force = 0, ignore_errors = 0, ignore_sparse = 0;
+	int advise_to_reapply = 0;
 	struct option builtin_mv_options[] = {
 		OPT__VERBOSE(&verbose, N_("be verbose")),
 		OPT__DRY_RUN(&show_only, N_("dry run")),
@@ -383,6 +384,11 @@ remove_entry:
 		pos = cache_name_pos(src, strlen(src));
 		assert(pos >= 0);
 		rename_cache_entry_at(pos, dst);
+		if (!advise_to_reapply &&
+			!path_in_sparse_checkout(src, &the_index) &&
+			path_in_sparse_checkout(dst, &the_index)) {
+				advise_to_reapply = 1;
+			}
 	}
 
 	if (gitmodules_modified)
@@ -391,6 +397,9 @@ remove_entry:
 	if (write_locked_index(&the_index, &lock_file,
 			       COMMIT_LOCK | SKIP_IF_UNCHANGED))
 		die(_("Unable to write new index file"));
+
+	if (advise_to_reapply)
+		printf(_("Please use \"git sparse-checkout reapply\" to reapply the sparsity.\n"));
 
 	string_list_clear(&src_for_dst, 0);
 	UNLEAK(source);
