@@ -115,6 +115,25 @@ static int index_range_of_same_dir(const char *src, int length,
 	return last - first;
 }
 
+static int check_dir_in_index(const char *dir)
+{
+	int ret = 0;
+	int length = sizeof(dir) + 1;
+	char *substr = malloc(length);
+
+	for (int i = 0; i < the_index.cache_nr; i++) {
+		memcpy(substr, the_index.cache[i]->name, length);
+		memset(substr + length - 1, 0, 1);
+
+		if (strcmp(dir, substr) == 0) {
+			ret = 1;
+			return ret;
+		}
+	}
+	free(substr);
+	return ret;
+}
+
 int cmd_mv(int argc, const char **argv, const char *prefix)
 {
 	int i, flags, gitmodules_modified = 0;
@@ -129,7 +148,8 @@ int cmd_mv(int argc, const char **argv, const char *prefix)
 		OPT_END(),
 	};
 	const char **source, **destination, **dest_path, **submodule_gitfile;
-	enum update_mode { BOTH = 0, WORKING_DIRECTORY, INDEX, SPARSE } *modes;
+	enum update_mode { BOTH = 0, WORKING_DIRECTORY, INDEX, SPARSE,
+	SPARSE_DIRECTORY } *modes;
 	struct stat st;
 	struct string_list src_for_dst = STRING_LIST_INIT_NODUP;
 	struct lock_file lock_file = LOCK_INIT;
@@ -197,6 +217,8 @@ int cmd_mv(int argc, const char **argv, const char *prefix)
 			 */
 
 			int pos = cache_name_pos(src, length);
+			const char *src_w_slash = add_slash(src);
+
 			if (pos >= 0) {
 				const struct cache_entry *ce = active_cache[pos];
 
@@ -209,6 +231,11 @@ int cmd_mv(int argc, const char **argv, const char *prefix)
 				else
 					bad = _("bad source");
 			}
+			else if (check_dir_in_index(src_w_slash) &&
+			!path_in_sparse_checkout(src_w_slash, &the_index)) {
+				modes[i] = SPARSE_DIRECTORY;
+				goto dir_check;
+			}
 			/* only error if existence is expected. */
 			else if (modes[i] != SPARSE)
 				bad = _("bad source");
@@ -219,7 +246,9 @@ int cmd_mv(int argc, const char **argv, const char *prefix)
 				&& lstat(dst, &st) == 0)
 			bad = _("cannot move directory over file");
 		else if (src_is_dir) {
-			int first = cache_name_pos(src, length), last;
+			int first, last;
+dir_check:
+			first = cache_name_pos(src, length);
 
 			if (first >= 0)
 				prepare_move_submodule(src, first,
@@ -230,7 +259,8 @@ int cmd_mv(int argc, const char **argv, const char *prefix)
 			else { /* last - first >= 1 */
 				int j, dst_len, n;
 
-				modes[i] = WORKING_DIRECTORY;
+				if (!modes[i])
+					modes[i] = WORKING_DIRECTORY;
 				n = argc + last - first;
 				REALLOC_ARRAY(source, n);
 				REALLOC_ARRAY(destination, n);
@@ -332,7 +362,8 @@ remove_entry:
 			printf(_("Renaming %s to %s\n"), src, dst);
 		if (show_only)
 			continue;
-		if (mode != INDEX && mode != SPARSE && rename(src, dst) < 0) {
+		if (mode != INDEX && mode != SPARSE && mode != SPARSE_DIRECTORY &&
+		 rename(src, dst) < 0) {
 			if (ignore_errors)
 				continue;
 			die_errno(_("renaming '%s' failed"), src);
@@ -346,7 +377,7 @@ remove_entry:
 							      1);
 		}
 
-		if (mode == WORKING_DIRECTORY)
+		if (mode == WORKING_DIRECTORY || mode == SPARSE_DIRECTORY)
 			continue;
 
 		pos = cache_name_pos(src, strlen(src));
