@@ -26,6 +26,7 @@ enum update_mode {
 	INDEX = (1 << 2),
 	SPARSE = (1 << 3),
 	SKIP_WORKTREE_DIR = (1 << 4),
+	REGULAR = (1 << 5),
 };
 
 #define DUP_BASENAME 1
@@ -403,7 +404,7 @@ remove_entry:
 
 	for (i = 0; i < argc; i++) {
 		const char *src = source[i], *dst = destination[i];
-		enum update_mode mode = modes[i];
+		enum update_mode mode = !modes[i] ? REGULAR : modes[i];
 		int pos;
 		struct checkout state = CHECKOUT_INIT;
 		state.istate = &the_index;
