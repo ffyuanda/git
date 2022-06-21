@@ -168,7 +168,7 @@ int cmd_mv(int argc, const char **argv, const char *prefix)
 		OPT_END(),
 	};
 	const char **source, **destination, **dest_path, **submodule_gitfile;
-	enum update_mode *modes;
+	enum update_mode *modes, dst_mode = 0;
 	struct stat st;
 	struct string_list src_for_dst = STRING_LIST_INIT_NODUP;
 	struct lock_file lock_file = LOCK_INIT;
@@ -207,9 +207,15 @@ int cmd_mv(int argc, const char **argv, const char *prefix)
 		dest_path[0] = add_slash(dest_path[0]);
 		destination = internal_prefix_pathspec(dest_path[0], argv, argc, DUP_BASENAME);
 	} else {
-		if (argc != 1)
+		if (!check_dir_in_index(dest_path[0])) {
+			dest_path[0] = add_slash(dest_path[0]);
+			destination = internal_prefix_pathspec(dest_path[0], argv, argc, DUP_BASENAME);
+			dst_mode |= SKIP_WORKTREE_DIR;
+		} else if (argc != 1) {
 			die(_("destination '%s' is not a directory"), dest_path[0]);
-		destination = dest_path;
+		} else {
+			destination = dest_path;
+		}
 	}
 
 	/* Checking */
