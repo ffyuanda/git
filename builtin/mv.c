@@ -415,6 +415,9 @@ remove_entry:
 			printf(_("Renaming %s to %s\n"), src, dst);
 		if (show_only)
 			continue;
+		if (dst_mode & SKIP_WORKTREE_DIR) {
+			safe_create_dir(dirname(xstrdup(dst)), 0);
+		}
 		if (!(mode & (INDEX | SPARSE | SKIP_WORKTREE_DIR)) &&
 		    rename(src, dst) < 0) {
 			if (ignore_errors)
@@ -437,16 +440,39 @@ remove_entry:
 		assert(pos >= 0);
 		rename_cache_entry_at(pos, dst);
 
-		if ((mode & SPARSE) &&
-		    (path_in_sparse_checkout(dst, &the_index))) {
-			int dst_pos;
+		if (ignore_sparse &&
+		    !init_sparse_checkout_patterns(&the_index) &&
+		    the_index.sparse_checkout_patterns->use_cone_patterns) {
 
-			dst_pos = cache_name_pos(dst, strlen(dst));
-			active_cache[dst_pos]->ce_flags &= ~CE_SKIP_WORKTREE;
+			/* from out-of-cone to in-cone */
+			if ((mode & SPARSE) &&
+			    (path_in_sparse_checkout(dst, &the_index))) {
+				int dst_pos = cache_name_pos(dst, strlen(dst));
+				struct cache_entry *dst_ce = active_cache[dst_pos];
 
-			if (checkout_entry(active_cache[dst_pos], &state, NULL, NULL))
-				die(_("cannot checkout %s"), active_cache[dst_pos]->name);
+				dst_ce->ce_flags &= ~CE_SKIP_WORKTREE;
+
+				if (checkout_entry(dst_ce, &state, NULL, NULL))
+					die(_("cannot checkout %s"), dst_ce->name);
+				continue;
+			}
+
+			/* from in-cone to out-of-cone */
+			if ((mode & REGULAR) &&
+			    (!path_in_sparse_checkout(dst, &the_index))) {
+				int dst_pos = cache_name_pos(dst, strlen(dst));
+				struct cache_entry *dst_ce = active_cache[dst_pos];
+
+				if (ce_uptodate(dst_ce)) {
+					dst_ce->ce_flags |= CE_SKIP_WORKTREE;
+					remove(dst_ce->name);
+				}
+				else {
+					advise_on_moving_dirty_path(dst);
+				}
+			}
 		}
+
 	}
 
 	if (gitmodules_modified)

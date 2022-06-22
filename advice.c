@@ -261,3 +261,20 @@ void detach_advice(const char *new_name)
 
 	fprintf(stderr, fmt, new_name);
 }
+
+void advise_on_moving_dirty_path(const char *dst_path)
+{
+	const char *fmt =
+	_("Moved but cannot automatically sparsify dirty path %s.\n"
+	"Stage the path by doing\n"
+	"\n"
+	"  git add %s\n"
+	"\n"
+	"then use\n"
+	"\n"
+	"  git sparse-checkout reapply\n"
+	"\n"
+	"to sparsify it.\n");
+
+	fprintf(stderr, fmt, dst_path, dst_path);
+}

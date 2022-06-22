@@ -74,5 +74,6 @@ void NORETURN die_conclude_merge(void);
 void NORETURN die_ff_impossible(void);
 void advise_on_updating_sparse_paths(struct string_list *pathspec_list);
 void detach_advice(const char *new_name);
+void advise_on_moving_dirty_path(const char *dst_path);
 
 #endif /* ADVICE_H */
