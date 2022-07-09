@@ -261,3 +261,17 @@ void detach_advice(const char *new_name)
 
 	fprintf(stderr, fmt, new_name);
 }
+
+void advise_on_moving_dirty_path(struct string_list *pathspec_list)
+{
+	struct string_list_item *item;
+
+	if (!pathspec_list->nr)
+		return;
+
+	fprintf(stderr, _("The following dirty paths and/or pathspecs are moved\n"
+			  "but not sparsified. Use \"git add\" to stage them then\n"
+			  "use \"git sparse-checkout reapply\" to sparsify them.\n"));
+	for_each_string_list_item(item, pathspec_list)
+		fprintf(stderr, "%s\n", item->string);
+}

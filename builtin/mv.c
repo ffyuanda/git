@@ -21,7 +21,7 @@ static const char * const builtin_mv_usage[] = {
 };
 
 enum update_mode {
-	BOTH = 0,
+	DEFAULT = 0,
 	WORKING_DIRECTORY = (1 << 1),
 	INDEX = (1 << 2),
 	SPARSE = (1 << 3),
@@ -168,12 +168,13 @@ int cmd_mv(int argc, const char **argv, const char *prefix)
 		OPT_END(),
 	};
 	const char **source, **destination, **dest_path, **submodule_gitfile;
-	enum update_mode *modes;
+	enum update_mode *modes, dst_mode = 0;
 	struct stat st;
 	struct string_list src_for_dst = STRING_LIST_INIT_NODUP;
 	struct lock_file lock_file = LOCK_INIT;
 	struct cache_entry *ce;
 	struct string_list only_match_skip_worktree = STRING_LIST_INIT_NODUP;
+	struct string_list dirty_paths = STRING_LIST_INIT_NODUP;
 
 	git_config(git_default_config, NULL);
 
@@ -207,9 +208,15 @@ int cmd_mv(int argc, const char **argv, const char *prefix)
 		dest_path[0] = add_slash(dest_path[0]);
 		destination = internal_prefix_pathspec(dest_path[0], argv, argc, DUP_BASENAME);
 	} else {
-		if (argc != 1)
+		if (!check_dir_in_index(dest_path[0])) {
+			dest_path[0] = add_slash(dest_path[0]);
+			destination = internal_prefix_pathspec(dest_path[0], argv, argc, DUP_BASENAME);
+			dst_mode |= SKIP_WORKTREE_DIR;
+		} else if (argc != 1) {
 			die(_("destination '%s' is not a directory"), dest_path[0]);
-		destination = dest_path;
+		} else {
+			destination = dest_path;
+		}
 	}
 
 	/* Checking */
@@ -398,6 +405,7 @@ remove_entry:
 		const char *src = source[i], *dst = destination[i];
 		enum update_mode mode = modes[i];
 		int pos;
+		int up_to_date = 0;
 		struct checkout state = CHECKOUT_INIT;
 		state.istate = &the_index;
 
@@ -408,6 +416,7 @@ remove_entry:
 		if (show_only)
 			continue;
 		if (!(mode & (INDEX | SPARSE | SKIP_WORKTREE_DIR)) &&
+		    !(dst_mode & SKIP_WORKTREE_DIR) &&
 		    rename(src, dst) < 0) {
 			if (ignore_errors)
 				continue;
@@ -427,19 +436,51 @@ remove_entry:
 
 		pos = cache_name_pos(src, strlen(src));
 		assert(pos >= 0);
+		if (!(mode & SPARSE) && !lstat(src, &st))
+			up_to_date = !ce_modified(active_cache[pos], &st, 0);
 		rename_cache_entry_at(pos, dst);
 
-		if ((mode & SPARSE) &&
-		    (path_in_sparse_checkout(dst, &the_index))) {
-			int dst_pos;
+		if (ignore_sparse &&
+		    !init_sparse_checkout_patterns(&the_index) &&
+		    the_index.sparse_checkout_patterns->use_cone_patterns) {
 
-			dst_pos = cache_name_pos(dst, strlen(dst));
-			active_cache[dst_pos]->ce_flags &= ~CE_SKIP_WORKTREE;
+			/* from out-of-cone to in-cone */
+			if ((mode & SPARSE) &&
+			    path_in_sparse_checkout(dst, &the_index)) {
+				int dst_pos = cache_name_pos(dst, strlen(dst));
+				struct cache_entry *dst_ce = active_cache[dst_pos];
 
-			if (checkout_entry(active_cache[dst_pos], &state, NULL, NULL))
-				die(_("cannot checkout %s"), active_cache[dst_pos]->name);
+				dst_ce->ce_flags &= ~CE_SKIP_WORKTREE;
+
+				if (checkout_entry(dst_ce, &state, NULL, NULL))
+					die(_("cannot checkout %s"), dst_ce->name);
+				continue;
+			}
+
+			/* from in-cone to out-of-cone */
+			if ((dst_mode & SKIP_WORKTREE_DIR) &&
+			    !(mode & SPARSE) &&
+			    !path_in_sparse_checkout(dst, &the_index)) {
+				int dst_pos = cache_name_pos(dst, strlen(dst));
+				struct cache_entry *dst_ce = active_cache[dst_pos];
+				char *src_dir = dirname(xstrdup(src));
+
+				if (up_to_date) {
+					dst_ce->ce_flags |= CE_SKIP_WORKTREE;
+					unlink_or_warn(src);
+				} else {
+					string_list_append(&dirty_paths, dst);
+					safe_create_leading_directories(xstrdup(dst));
+					rename(src, dst);
+				}
+				if ((mode & INDEX) && is_empty_dir(src_dir))
+					rmdir_or_warn(src_dir);
+			}
 		}
 	}
+
+	if (dirty_paths.nr)
+		advise_on_moving_dirty_path(&dirty_paths);
 
 	if (gitmodules_modified)
 		stage_updated_gitmodules(&the_index);
@@ -449,6 +490,7 @@ remove_entry:
 		die(_("Unable to write new index file"));
 
 	string_list_clear(&src_for_dst, 0);
+	string_list_clear(&dirty_paths, 0);
 	UNLEAK(source);
 	UNLEAK(dest_path);
 	free(submodule_gitfile);

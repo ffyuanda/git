@@ -290,4 +290,84 @@ test_expect_success 'move sparse file to existing destination with --force and -
 	test_cmp expect sub/file1
 '
 
+test_expect_success 'move clean path from in-cone to out-of-cone' '
+	test_when_finished "cleanup_sparse_checkout" &&
+	setup_sparse_checkout &&
+
+	git mv --sparse sub/d folder1 2>stderr &&
+	test_must_be_empty stderr &&
+
+	test_path_is_missing sub/d &&
+	test_path_is_missing folder1/d &&
+	git ls-files -t >actual &&
+	! grep -x "H sub/d" actual &&
+	grep -x "S folder1/d" actual
+'
+
+test_expect_success 'move dirty path from in-cone to out-of-cone' '
+	test_when_finished "cleanup_sparse_checkout" &&
+	setup_sparse_checkout &&
+	echo "modified" >>sub/d &&
+
+	git mv --sparse sub/d folder1 2>stderr &&
+	cat >expect <<-EOF &&
+	The following dirty paths and/or pathspecs are moved
+	but not sparsified. Use "git add" to stage them then
+	use "git sparse-checkout reapply" to sparsify them.
+	folder1/d
+	EOF
+	test_cmp expect stderr &&
+
+	test_path_is_missing sub/d &&
+	test_path_is_file folder1/d &&
+	git ls-files -t >actual &&
+	! grep -x "H sub/d" actual &&
+	grep -x "H folder1/d" actual
+'
+
+test_expect_success 'move dir from in-cone to out-of-cone' '
+	test_when_finished "cleanup_sparse_checkout" &&
+	setup_sparse_checkout &&
+
+	git mv --sparse sub/dir folder1 2>stderr &&
+	test_must_be_empty stderr &&
+
+	test_path_is_missing sub/dir &&
+	test_path_is_missing folder1 &&
+	git ls-files -t >actual &&
+	! grep -x "H sub/dir/e" actual &&
+	grep -x "S folder1/dir/e" actual
+'
+
+test_expect_success 'move partially-dirty dir from in-cone to out-of-cone' '
+	test_when_finished "cleanup_sparse_checkout" &&
+	setup_sparse_checkout &&
+	touch sub/dir/e2 sub/dir/e3 &&
+	git add sub/dir/e2 sub/dir/e3 &&
+	echo "modified" >>sub/dir/e2 &&
+	echo "modified" >>sub/dir/e3 &&
+
+	git mv --sparse sub/dir folder1 2>stderr &&
+	cat >expect <<-EOF &&
+	The following dirty paths and/or pathspecs are moved
+	but not sparsified. Use "git add" to stage them then
+	use "git sparse-checkout reapply" to sparsify them.
+	folder1/dir/e2
+	folder1/dir/e3
+	EOF
+	test_cmp expect stderr &&
+
+	test_path_is_missing sub/dir &&
+	test_path_is_missing folder1/dir/e &&
+	test_path_is_file folder1/dir/e2 &&
+	test_path_is_file folder1/dir/e3 &&
+	git ls-files -t >actual &&
+	! grep -x "H sub/dir/e" actual &&
+	! grep -x "H sub/dir/e2" actual &&
+	! grep -x "H sub/dir/e3" actual &&
+	grep -x "S folder1/dir/e" actual &&
+	grep -x "H folder1/dir/e2" actual &&
+	grep -x "H folder1/dir/e3" actual
+'
+
 test_done
