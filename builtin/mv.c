@@ -150,6 +150,10 @@ static int check_dir_in_index(const char *name)
 			return 1;
 		if (ce_skip_worktree(ce))
 			return 0;
+	} else {
+		ce = active_cache[pos];
+		if (S_ISSPARSEDIR(ce->ce_mode) && ce_skip_worktree(ce))
+			return 0;
 	}
 	return 1;
 }
