@@ -140,6 +140,7 @@ static int index_range_of_same_dir(const char *src, int length,
  */
 static int check_dir_in_index(const char *name)
 {
+	int ret = 1;
 	const char *with_slash = add_slash(name);
 	int length = strlen(with_slash);
 
@@ -149,14 +150,18 @@ static int check_dir_in_index(const char *name)
 	if (pos < 0) {
 		pos = -pos - 1;
 		if (pos >= the_index.cache_nr)
-			return 1;
+			goto free_return;
 		ce = active_cache[pos];
 		if (strncmp(with_slash, ce->name, length))
-			return 1;
+			goto free_return;
 		if (ce_skip_worktree(ce))
-			return 0;
+			ret = 0;
 	}
-	return 1;
+
+free_return:
+	if (with_slash != name)
+		free((char *)with_slash);
+	return ret;
 }
 
 int cmd_mv(int argc, const char **argv, const char *prefix)
