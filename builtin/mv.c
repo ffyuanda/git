@@ -132,6 +132,11 @@ static int index_range_of_same_dir(const char *src, int length,
  * Return 0 if such directory exist (i.e. with any of its contained files not
  * marked with CE_SKIP_WORKTREE, the directory would be present in working tree).
  * Return 1 otherwise.
+ *
+ * Note: *always* check the directory is not on-disk before this function
+ * (i.e. using lstat());
+ * otherwise it may return a false positive for a partially sparsified
+ * directory.
  */
 static int check_dir_in_index(const char *name)
 {
