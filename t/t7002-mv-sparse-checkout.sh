@@ -303,7 +303,7 @@ test_expect_success 'move sparse file to existing destination with --force and -
 	test_cmp expect sub/file1
 '
 
-test_expect_failure 'move clean path from in-cone to out-of-cone' '
+test_expect_success 'move clean path from in-cone to out-of-cone' '
 	test_when_finished "cleanup_sparse_checkout" &&
 	setup_sparse_checkout &&
 
@@ -356,7 +356,7 @@ test_expect_failure 'move clean path from in-cone to out-of-cone overwrite' '
 	test_cmp expect actual
 '
 
-test_expect_failure 'move dirty path from in-cone to out-of-cone' '
+test_expect_success 'move dirty path from in-cone to out-of-cone' '
 	test_when_finished "cleanup_sparse_checkout" &&
 	setup_sparse_checkout &&
 	echo "modified" >>sub/d &&
@@ -380,7 +380,7 @@ test_expect_failure 'move dirty path from in-cone to out-of-cone' '
 	grep -x "H folder1/d" actual
 '
 
-test_expect_failure 'move dir from in-cone to out-of-cone' '
+test_expect_success 'move dir from in-cone to out-of-cone' '
 	test_when_finished "cleanup_sparse_checkout" &&
 	setup_sparse_checkout &&
 
@@ -400,7 +400,7 @@ test_expect_failure 'move dir from in-cone to out-of-cone' '
 	grep -x "S folder1/dir/e" actual
 '
 
-test_expect_failure 'move partially-dirty dir from in-cone to out-of-cone' '
+test_expect_success 'move partially-dirty dir from in-cone to out-of-cone' '
 	test_when_finished "cleanup_sparse_checkout" &&
 	setup_sparse_checkout &&
 	touch sub/dir/e2 sub/dir/e3 &&
