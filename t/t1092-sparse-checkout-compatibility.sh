@@ -1873,7 +1873,7 @@ test_expect_success 'rm pathspec inside sparse definition' '
 	test_all_match git status --porcelain=v2
 '
 
-test_expect_failure 'rm pathspec outside sparse definition' '
+test_expect_success 'rm pathspec outside sparse definition' '
 	init_repos &&
 
 	for file in folder1/a folder1/0/1 folder1/0/0/0

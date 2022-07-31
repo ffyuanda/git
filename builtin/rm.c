@@ -300,6 +300,10 @@ int cmd_rm(int argc, const char **argv, const char *prefix)
 
 	seen = xcalloc(pathspec.nr, 1);
 
+	if (the_index.sparse_index &&
+	    pathspec_needs_expanded_index(&the_index, &pathspec))
+		ensure_full_index(&the_index);
+
 	for (i = 0; i < active_nr; i++) {
 		const struct cache_entry *ce = active_cache[i];
 
