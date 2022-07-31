@@ -1870,7 +1870,7 @@ test_expect_success 'rm pathspec inside sparse definition' '
 	test_all_match git status --porcelain=v2
 '
 
-test_expect_failure 'rm pathspec outside sparse definition' '
+test_expect_success 'rm pathspec outside sparse definition' '
 	init_repos &&
 
 	for file in folder1/a folder1/0/1
@@ -1910,7 +1910,7 @@ test_expect_failure 'rm pathspec outside sparse definition' '
 	test_sparse_match git status --porcelain=v2
 '
 
-test_expect_failure 'sparse index is not expanded: rm' '
+test_expect_success 'sparse index is not expanded: rm' '
 	init_repos &&
 
 	ensure_not_expanded rm deep/a &&
