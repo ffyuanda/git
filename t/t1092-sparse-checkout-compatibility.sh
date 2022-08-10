@@ -1853,7 +1853,7 @@ test_expect_success 'mv directory from out-of-cone to in-cone' '
 	grep -e "H deep/0/1" actual
 '
 
-test_expect_failure 'grep expands index using --sparse' '
+test_expect_success 'grep expands index using --sparse' '
 	init_repos &&
 
 	# With --sparse and --cached, do not ignore sparse entries and
