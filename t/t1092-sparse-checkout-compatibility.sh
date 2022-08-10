@@ -1972,4 +1972,21 @@ test_expect_success 'sparse index is not expanded: rm' '
 	ensure_not_expanded rm -r deep
 '
 
+test_expect_failure 'grep expands index using --sparse' '
+	init_repos &&
+
+	# With --sparse and --cached, do not ignore sparse entries and
+	# expand the index.
+	test_all_match git grep --sparse --cached a
+'
+
+test_expect_success 'grep is not expanded' '
+	init_repos &&
+
+	ensure_not_expanded grep a &&
+	ensure_not_expanded grep a -- deep/* &&
+	# grep does not match anything per se, so ! is used
+	ensure_not_expanded ! grep a -- folder1/*
+'
+
 test_done

@@ -519,11 +519,12 @@ static int grep_cache(struct grep_opt *opt,
 		strbuf_addstr(&name, repo->submodule_prefix);
 	}
 
+	prepare_repo_settings(repo);
+	repo->settings.command_requires_full_index = 0;
+
 	if (repo_read_index(repo) < 0)
 		die(_("index file corrupt"));
 
-	/* TODO: audit for interaction with sparse-index. */
-	ensure_full_index(repo->index);
 	for (nr = 0; nr < repo->index->cache_nr; nr++) {
 		const struct cache_entry *ce = repo->index->cache[nr];
 
