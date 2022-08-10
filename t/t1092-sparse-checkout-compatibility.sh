@@ -1853,7 +1853,7 @@ test_expect_success 'mv directory from out-of-cone to in-cone' '
 	grep -e "H deep/0/1" actual
 '
 
-test_expect_failure 'grep expands index using --sparse' '
+test_expect_success 'grep expands index using --sparse' '
 	init_repos &&
 
 	run_on_all git grep a &&
@@ -1864,7 +1864,7 @@ test_expect_failure 'grep expands index using --sparse' '
 	test_all_match git grep --sparse a
 '
 
-test_expect_failure 'grep is not expanded' '
+test_expect_success 'grep is not expanded' '
 	init_repos &&
 
 	# both in-cone and out-of-cone pathspec should not expand the
