@@ -1972,7 +1972,7 @@ test_expect_success 'sparse index is not expanded: rm' '
 	ensure_not_expanded rm -r deep
 '
 
-test_expect_failure 'grep expands index using --sparse' '
+test_expect_success 'grep expands index using --sparse' '
 	init_repos &&
 
 	# With --sparse and --cached, do not ignore sparse entries and
