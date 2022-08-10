@@ -125,6 +125,8 @@ test_expect_success 'grep --cached searches entries with the SKIP_WORKTREE bit' 
 	dir/c:text
 	EOF
 	git grep --cached "text" >actual &&
+	test_cmp expect actual &&
+	git grep --sparse "text" >actual &&
 	test_cmp expect actual
 '
 
@@ -153,6 +155,8 @@ test_expect_success 'grep --recurse-submodules --cached searches entries with th
 	sub2/a:text
 	EOF
 	git grep --recurse-submodules --cached "text" >actual &&
+	test_cmp expect actual &&
+	git grep --recurse-submodules --sparse "text" >actual &&
 	test_cmp expect actual
 '
 
@@ -175,6 +179,8 @@ test_expect_success 'grep --cached searches index entries with both CE_VALID and
 	test_when_finished "git update-index --no-assume-unchanged b" &&
 	git update-index --assume-unchanged b &&
 	git grep --cached text >actual &&
+	test_cmp expect actual &&
+	git grep --sparse text >actual &&
 	test_cmp expect actual
 '
 
