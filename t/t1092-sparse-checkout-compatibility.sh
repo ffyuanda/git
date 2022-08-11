@@ -1853,4 +1853,21 @@ test_expect_success 'mv directory from out-of-cone to in-cone' '
 	grep -e "H deep/0/1" actual
 '
 
+test_expect_success 'grep expands index using --sparse' '
+	init_repos &&
+
+	# With --sparse and --cached, do not ignore sparse entries and
+	# expand the index.
+	test_all_match git grep --sparse --cached a
+'
+
+test_expect_success 'grep is not expanded' '
+	init_repos &&
+
+	ensure_not_expanded grep a &&
+	ensure_not_expanded grep a -- deep/* &&
+	# grep does not match anything per se, so ! is used
+	ensure_not_expanded ! grep a -- folder1/*
+'
+
 test_done
