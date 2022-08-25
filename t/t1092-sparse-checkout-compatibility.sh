@@ -912,7 +912,7 @@ test_expect_success 'read-tree --prefix' '
 	test_all_match git read-tree --prefix=deep/deeper1/deepest -u deepest &&
 	test_all_match git status --porcelain=v2 &&
 
-	test_all_match git rm -rf --sparse folder1/ &&
+	run_on_all git rm -rf --sparse folder1/ &&
 	test_all_match git read-tree --prefix=folder1/ -u update-folder1 &&
 	test_all_match git status --porcelain=v2 &&
 
@@ -1851,6 +1851,67 @@ test_expect_success 'mv directory from out-of-cone to in-cone' '
 	git -C sparse-checkout ls-files -t >actual &&
 	grep -e "H deep/0/0/0" actual &&
 	grep -e "H deep/0/1" actual
+'
+
+test_expect_success 'rm pathspec inside sparse definition' '
+	init_repos &&
+
+	for file in deep/a deep/deeper1/0/0/0 deep/deeper1/deepest/a
+	do
+		test_all_match git rm $file &&
+		test_all_match git status --porcelain=v2
+	done &&
+
+	# test wildcard
+	run_on_all git reset --hard &&
+	test_all_match git rm deep/* &&
+	test_all_match git status --porcelain=v2 &&
+
+	# test recursive rm
+	run_on_all git reset --hard &&
+	test_all_match git rm -r deep &&
+	test_all_match git status --porcelain=v2
+'
+
+test_expect_success 'rm pathspec outside sparse definition' '
+	init_repos &&
+
+	for file in folder1/a folder1/0/1 folder1/0/0/0
+	do
+		test_sparse_match test_must_fail git rm $file &&
+		test_sparse_match test_must_fail git rm --cached $file &&
+		test_sparse_match git rm --sparse $file &&
+		test_sparse_match git status --porcelain=v2
+	done &&
+
+	# test wildcard
+	run_on_sparse git reset --hard &&
+	test_sparse_match test_must_fail git rm folder1/* &&
+	test_sparse_match git rm --sparse folder1/* &&
+	test_sparse_match git status --porcelain=v2 &&
+
+	# test recursive rm
+	run_on_sparse git reset --hard &&
+	test_sparse_match test_must_fail git rm folder1 &&
+	test_sparse_match git rm -r --sparse folder1 &&
+	test_sparse_match git status --porcelain=v2
+'
+
+test_expect_success 'sparse index is not expanded: rm' '
+	init_repos &&
+
+	for file in deep/a deep/deeper1/a deep/deeper1/deepest/a
+	do
+		ensure_not_expanded rm $file
+	done &&
+
+	# test in-cone wildcard not expand
+	git -C sparse-index reset --hard &&
+	ensure_not_expanded rm deep/* &&
+
+	# test recursive rm not expand
+	git -C sparse-index reset --hard &&
+	ensure_not_expanded rm -r deep
 '
 
 test_done

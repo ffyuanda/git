@@ -171,4 +171,7 @@ int match_pathspec_attrs(struct index_state *istate,
 			 const char *name, int namelen,
 			 const struct pathspec_item *item);
 
+int pathspec_needs_expanded_index(struct index_state *istate,
+				  const struct pathspec *pathspec);
+
 #endif /* PATHSPEC_H */
