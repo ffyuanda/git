@@ -1972,11 +1972,10 @@ test_expect_success 'sparse index is not expanded: rm' '
 	ensure_not_expanded rm -r deep
 '
 
-test_expect_success 'grep expands index using --sparse' '
+test_expect_success 'grep using --sparse' '
 	init_repos &&
 
-	# With --sparse and --cached, do not ignore sparse entries and
-	# expand the index.
+	# With --sparse and --cached, do not ignore sparse entries
 	test_all_match git grep --sparse --cached a
 '
 
