@@ -1987,7 +1987,15 @@ test_expect_success 'grep is not expanded' '
 
 	# All files within the folder1/* pathspec are sparse,
 	# so this command does not find any matches
-	ensure_not_expanded ! grep a -- folder1/*
+	ensure_not_expanded ! grep a -- folder1/* &&
+
+	# test out-of-cone pathspec with or without wildcard
+	ensure_not_expanded grep --sparse --cached a -- "folder1/a" &&
+	ensure_not_expanded grep --sparse --cached a -- "folder1/*" &&
+
+	# test in-cone pathspec with or without wildcard
+	ensure_not_expanded grep --sparse --cached a -- "deep/a" &&
+	ensure_not_expanded grep --sparse --cached a -- "deep/*"
 '
 
 test_done
